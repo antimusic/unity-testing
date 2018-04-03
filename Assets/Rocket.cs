@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour {
 
@@ -60,14 +58,21 @@ public class Rocket : MonoBehaviour {
 
 	void OnCollisionEnter(Collision collision)
 	{
-		print("Collided");
+		Scene scene = SceneManager.GetActiveScene();
+		print ("active scene is" + scene.buildIndex);
 		switch (collision.gameObject.tag)
 		{
 			case "Friendly":
 			print("OK");
 			break;
+			case "Finish":
+			print("Hit Finish!");
+			SceneManager.LoadScene(scene.buildIndex + 1);
+			//print (SceneManager.GetActiveScene());
+			break;
 			default:
 			print("dead");
+			SceneManager.LoadScene(scene.buildIndex);
 			break;
 		}
 	}

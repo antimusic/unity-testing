@@ -5,29 +5,40 @@ public class Rocket : MonoBehaviour {
 
 	[SerializeField] float rcsThrust = 100f;
 	[SerializeField] float mainThrust = 100f;
+
+	[SerializeField] AudioClip mainEngine;
+	[SerializeField] AudioClip loseSound;
+	[SerializeField] AudioClip winSound;
+
+	[SerializeField] ParticleSystem mainEngineParticles;
+	[SerializeField] ParticleSystem loseParticles;
+	[SerializeField] ParticleSystem winParticles;
+	
 	Rigidbody rigidBody;
 	AudioSource thrustAudio;
 	enum State { Alive, Dying, Trancending }
 	State state = State.Alive;
 
+	
+
 	// Use this for initialization
 	void Start () {
 		rigidBody = GetComponent<Rigidbody>();
 		thrustAudio = GetComponent<AudioSource>();
+		thrustAudio.PlayOneShot(winSound);
 	}
 	
 	// Update is called once per frame
 	void Update () {
 
 		if (state == State.Alive)
-		//stop sound on death
 		{
-		Thrust();
-		Rotate();
+		RespondToThrustInput();
+		RespondToRotateInput();
 		}
 	}
 
-    void Rotate()
+    void RespondToRotateInput()
     {
         rigidBody.freezeRotation = true; // takes manual control of rotation
 
@@ -47,23 +58,30 @@ public class Rocket : MonoBehaviour {
 		rigidBody.freezeRotation = false; // resume physics control of rotation
     }
 
-    void Thrust()
+    void RespondToThrustInput()
     {
         if (Input.GetKey(KeyCode.Space))
         {
-            rigidBody.AddRelativeForce(Vector3.up * mainThrust);
-            if (!thrustAudio.isPlaying)
-            {
-                thrustAudio.Play();
-            }
+            ApplyThrust();
         }
-		else
+        else
         {
             thrustAudio.Stop();
+			mainEngineParticles.Stop();
         }
     }
 
-	void OnCollisionEnter(Collision collision)
+    void ApplyThrust()
+    {
+        rigidBody.AddRelativeForce(Vector3.up * mainThrust);
+        if (!thrustAudio.isPlaying)
+        {
+            thrustAudio.PlayOneShot(mainEngine);
+        }
+		mainEngineParticles.Play();
+    }
+
+    void OnCollisionEnter(Collision collision)
 	{
 		if (state !=State.Alive) { return; } //ignore collisions when dead
 		switch (collision.gameObject.tag)
@@ -72,26 +90,43 @@ public class Rocket : MonoBehaviour {
 			print("OK");
 			break;
             case "Finish":
-                print("Hit Finish!");
-				state = State.Trancending;
-				Invoke("LoadNextScene", 1f); 
+                StartSuccessSequence();
                 break;
             default:
-                print("dead");
-				state = State.Dying;
-                Invoke("LoadFirstLevel", 1f);
+                StartDeathSequence();
                 break;
         }
 	}
 
-    private static void LoadFirstLevel()
+    private void StartDeathSequence()
+    {
+        print("dead");
+        state = State.Dying;
+        thrustAudio.Stop();
+        thrustAudio.PlayOneShot(loseSound);
+		loseParticles.Play();
+        Invoke("LoadFirstLevel", 1f);
+    }
+
+    private void StartSuccessSequence()
+    {
+        print("Hit Finish!");
+        state = State.Trancending;
+        thrustAudio.Stop();
+        thrustAudio.PlayOneShot(winSound);
+		winParticles.Play();
+        Invoke("LoadNextScene", 1f);
+    }
+
+    private void LoadFirstLevel()
     {
         SceneManager.LoadScene(0);
+		
     }
 
     private void LoadNextScene()
     {
-        SceneManager.LoadScene(1);
+		SceneManager.LoadScene(1);
     }
 }
   
